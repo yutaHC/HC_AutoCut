@@ -36,3 +36,8 @@ new_autoCut_program.md
 autocut-plugin/output/
 autocut-plugin/data.csv
 autocut-plugin/venv/
+autocut-plugin/pip-freeze.txt
+autocut-plugin/__pycache__/
+autocut-plugin/python/__pycache__/
+autocut-plugin/**/*.pyc
+autocut-plugin/.DS_Store

@@ -1,0 +1,6 @@
+# AutoCut standalone pinned dependencies
+# Python 3.11 on Apple Silicon (arm64) 前提
+anthropic==0.34.2
+mlx-whisper==0.3.0
+openai==1.51.2
+pydub==0.25.1

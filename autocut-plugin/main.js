@@ -118,7 +118,7 @@ function startAnalysis() {
   }
 
   if (!fs.existsSync(PYTHON_BIN)) {
-    alert('setup.sh を先に実行してください。\n\nターミナルで:\n  cd ' + PLUGIN_DIR + '/..\n  sh setup.sh');
+    alert('setup.sh を先に実行してください。\n\nターミナルで:\n  cd ' + PLUGIN_DIR + '\n  sh setup.sh');
     return;
   }
 

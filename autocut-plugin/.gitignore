@@ -1,0 +1,8 @@
+.DS_Store
+venv/
+pip-freeze.txt
+data.csv
+output/
+__pycache__/
+python/__pycache__/
+*.pyc
