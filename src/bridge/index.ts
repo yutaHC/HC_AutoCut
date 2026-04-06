@@ -456,18 +456,19 @@ export class PremiereProBridge implements PremiereProTransport {
     return await this.executeScript(script);
   }
 
-  async renderSequence(sequenceId: string, outputPath: string, presetPath: string): Promise<void> {
+  async renderSequence(sequenceId: string, outputPath: string, presetPath: string, useInOut = false): Promise<void> {
+    const encodeType = useInOut ? 'encoder.ENCODE_IN_TO_OUT' : 'encoder.ENCODE_ENTIRE';
     const script = `
       // Render sequence
       var sequence = app.project.getSequenceByID("${sequenceId}");
       var encoder = app.encoder;
-      
+
       encoder.encodeSequence(sequence, "${outputPath}", "${presetPath}",
-        encoder.ENCODE_ENTIRE, false);
+        ${encodeType}, false);
 
       return JSON.stringify({ success: true });
     `;
-    
+
     await this.executeScript(script);
   }
 

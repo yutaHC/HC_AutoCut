@@ -1,0 +1,353 @@
+/**
+ * main.js
+ * AutoCut CEPパネル メインロジック
+ * Node.js (child_process) でPythonパイプラインを起動し、
+ * ExtendScript経由でPremiere Proと通信する。
+ */
+
+'use strict';
+
+const csInterface = new CSInterface();
+const path = require('path');
+const { spawn } = require('child_process');
+const fs = require('fs');
+
+// プラグインディレクトリ（__dirname はCEP環境では使えないため CSInterface で取得）
+const PLUGIN_DIR = csInterface.getSystemPath(SystemPath.EXTENSION);
+const PYTHON_BIN = path.join(PLUGIN_DIR, 'venv', 'bin', 'python3');
+const PIPELINE_SCRIPT = path.join(PLUGIN_DIR, 'python', 'pipeline.py');
+const os = require('os');
+const OUTPUT_XML = path.join(os.homedir(), 'Desktop', 'autocut_result.xml');
+
+const VERSION = '0.5.0';
+
+let selectedMode = 'standard';
+let selectedProvider = 'claude';
+let isRunning = false;
+
+// ---- 初期化 ----
+
+window.addEventListener('load', () => {
+  document.getElementById('versionLabel').textContent = 'v' + VERSION;
+  initApiKey();
+  log('AutoCut パネルが起動しました (v' + VERSION + ')');
+  log('Python: ' + PYTHON_BIN);
+
+  // Python環境が存在するか確認
+  if (!fs.existsSync(PYTHON_BIN)) {
+    log('⚠️  setup.sh を先に実行してください（venv が見つかりません）');
+  }
+});
+
+// ---- APIキー管理 ----
+
+function initApiKey() {
+  ['claude', 'openai'].forEach(provider => {
+    const storageKey = 'autocut_api_key_' + provider;
+    const saved = localStorage.getItem(storageKey) || '';
+    const input  = document.getElementById('apiKeyInput-' + provider);
+    const toggle = document.getElementById('apiKeyToggle-' + provider);
+    if (saved) {
+      input.value = saved;
+      input.closest('.section').style.display = 'none';
+      toggle.style.display = 'block';
+    } else {
+      toggle.style.display = 'none';
+    }
+  });
+}
+
+function toggleApiKeySection(provider) {
+  const section = document.getElementById('apiKeySection-' + provider);
+  const toggle  = document.getElementById('apiKeyToggle-' + provider);
+  section.style.display = section.style.display === 'none' ? '' : 'none';
+  toggle.textContent = section.style.display === 'none' ? '設定済み（変更する）' : '閉じる';
+}
+
+function getApiKey() {
+  const input      = document.getElementById('apiKeyInput-' + selectedProvider);
+  const storageKey = 'autocut_api_key_' + selectedProvider;
+  const key = input.value.trim();
+  if (key) {
+    localStorage.setItem(storageKey, key);
+    document.getElementById('apiKeySection-' + selectedProvider).style.display = 'none';
+    document.getElementById('apiKeyToggle-' + selectedProvider).style.display = 'block';
+    document.getElementById('apiKeyToggle-' + selectedProvider).textContent = '設定済み（変更する）';
+  }
+  return key || localStorage.getItem(storageKey) || '';
+}
+
+// ---- モード / プロバイダ選択 ----
+
+function selectMode(el) {
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedMode = el.dataset.mode;
+}
+
+function selectProvider(el) {
+  document.querySelectorAll('[data-provider]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedProvider = el.dataset.provider;
+
+  // APIキー欄を切り替え
+  ['claude', 'openai'].forEach(p => {
+    const storageKey = 'autocut_api_key_' + p;
+    const saved = localStorage.getItem(storageKey);
+    const section = document.getElementById('apiKeySection-' + p);
+    const toggle  = document.getElementById('apiKeyToggle-' + p);
+    if (p === selectedProvider) {
+      section.style.display = saved ? 'none' : '';
+      toggle.style.display  = saved ? 'block' : 'none';
+    } else {
+      section.style.display = 'none';
+      toggle.style.display  = 'none';
+    }
+  });
+}
+
+// ---- 解析開始 ----
+
+function startAnalysis() {
+  if (isRunning) return;
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    alert('APIキーを入力してください');
+    return;
+  }
+
+  if (!fs.existsSync(PYTHON_BIN)) {
+    alert('setup.sh を先に実行してください。\n\nターミナルで:\n  cd ' + PLUGIN_DIR + '/..\n  sh setup.sh');
+    return;
+  }
+
+  // Premiereからシーケンス情報を取得
+  log('シーケンス情報を取得中...');
+  csInterface.evalScript('getActiveSequenceInfo()', (result) => {
+    let info;
+    try {
+      info = JSON.parse(result);
+    } catch (e) {
+      showError('シーケンス情報の取得に失敗しました: ' + result);
+      return;
+    }
+
+    if (info.error) {
+      showError(info.error);
+      return;
+    }
+
+    const clips = info.clips || [{ path: info.clipPath, timelineStart: 0, timelineEnd: 0, mediaInPoint: 0, mediaOutPoint: 0 }];
+    log('シーケンス: ' + info.sequenceName);
+    log('クリップ数: ' + clips.length + (info.isMultiCam ? ' [マルチカメラ]' : ''));
+    log('FPS: ' + info.fps);
+
+    runPipeline(clips, apiKey);
+  });
+}
+
+// ---- Pythonパイプライン実行 ----
+
+function runPipeline(clips, apiKey) {
+  isRunning = true;
+  setRunningState(true);
+  resetResult();
+
+  const args = [
+    PIPELINE_SCRIPT,
+    '--clips-json', JSON.stringify(clips),
+    '--mode', selectedMode,
+    '--api-key', apiKey,
+    '--llm-provider', selectedProvider,
+    '--output', OUTPUT_XML,
+  ];
+
+  log('Python パイプラインを起動中...');
+
+  const pyProcess = spawn(PYTHON_BIN, args, {
+    env: Object.assign({}, process.env, {
+      KMP_DUPLICATE_LIB_OK: 'TRUE',
+    })
+  });
+
+  let buffer = '';
+
+  pyProcess.stdout.on('data', (data) => {
+    buffer += data.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // 最後の不完全な行はバッファに残す
+
+    lines.forEach(line => {
+      line = line.trim();
+      if (!line) return;
+      try {
+        const msg = JSON.parse(line);
+        handlePipelineMessage(msg);
+      } catch (e) {
+        log(line); // JSONでなければそのままログ
+      }
+    });
+  });
+
+  pyProcess.stderr.on('data', (data) => {
+    log('[stderr] ' + data.toString().trim());
+  });
+
+  pyProcess.on('close', (code) => {
+    isRunning = false;
+    setRunningState(false);
+
+    if (code !== 0) {
+      showError('パイプラインがエラーで終了しました (code: ' + code + ')');
+    }
+  });
+
+  pyProcess.on('error', (err) => {
+    isRunning = false;
+    setRunningState(false);
+    showError('起動エラー: ' + err.message);
+  });
+}
+
+// ---- パイプラインメッセージハンドラ ----
+
+const STEP_PCT = {
+  extracting:   10,
+  transcribing: 35,
+  detecting:    55,
+  analyzing:    72,
+  generating:   90,
+};
+
+const STEP_LABELS = {
+  extracting:   'step-extracting',
+  transcribing: 'step-transcribing',
+  analyzing:    'step-analyzing',
+  generating:   'step-generating',
+};
+
+let lastStepKey = null;
+
+function handlePipelineMessage(msg) {
+  if (msg.type === 'progress') {
+    const pct = msg.pct !== undefined ? msg.pct : (STEP_PCT[msg.step] || 0);
+    setProgress(pct, msg.msg || msg.step);
+    updateStepIndicators(msg.step);
+    log(msg.msg || msg.step);
+
+  } else if (msg.type === 'done') {
+    setProgress(100, '完了');
+    markAllStepsDone();
+    log('✅ 完了: ' + msg.cuts + '箇所カット / ' + formatSec(msg.saved_sec) + '削減');
+    showResult(msg);
+    importXML(msg.xml_path);
+
+  } else if (msg.type === 'error') {
+    showError(msg.message);
+  }
+}
+
+// ---- QE DOM で直接シーケンスを複製してカットを適用 ----
+
+function importXML(xmlPath) {
+  const jsonPath = xmlPath.replace(/\.xml$/, '.json');
+  log('Premiere Pro にシーケンスを作成中...');
+  csInterface.evalScript('applyAutoCutFromFile("' + jsonPath.replace(/\\/g, '\\\\') + '")', (result) => {
+    let res;
+    try {
+      res = JSON.parse(result);
+    } catch (e) {
+      log('結果を解析できませんでした: ' + result);
+      return;
+    }
+
+    if (res.success) {
+      log('✅ ' + res.newName + ' を作成しました');
+    } else {
+      log('⚠️  エラー: ' + res.message);
+    }
+  });
+}
+
+// ---- UI ヘルパー ----
+
+function setRunningState(running) {
+  const btn = document.getElementById('analyzeBtn');
+  const progressWrap = document.getElementById('progressWrap');
+  btn.disabled = running;
+  btn.textContent = running ? '解析中...' : '解析開始';
+  progressWrap.style.display = running ? 'block' : 'block';
+}
+
+function setProgress(pct, msg) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressMsg').textContent = msg;
+}
+
+function updateStepIndicators(step) {
+  const stepOrder = ['extracting', 'transcribing', 'analyzing', 'generating'];
+  const currentIdx = stepOrder.indexOf(step);
+
+  stepOrder.forEach((s, idx) => {
+    const elId = 'step-' + s;
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (idx < currentIdx) {
+      el.className = 'step done';
+    } else if (idx === currentIdx) {
+      el.className = 'step active';
+    } else {
+      el.className = 'step';
+    }
+  });
+}
+
+function markAllStepsDone() {
+  ['step-extracting', 'step-transcribing', 'step-analyzing', 'step-generating'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.className = 'step done';
+  });
+}
+
+function showResult(msg) {
+  const wrap = document.getElementById('resultWrap');
+  wrap.style.display = 'block';
+  wrap.className = 'result-wrap';
+  document.getElementById('resultTitle').textContent = '✅ 完了';
+  document.getElementById('resultStats').textContent =
+    msg.cuts + '箇所カット｜' + formatSec(msg.saved_sec) + '削減';
+}
+
+function showError(msg) {
+  log('❌ ' + msg);
+  const wrap = document.getElementById('resultWrap');
+  wrap.style.display = 'block';
+  wrap.className = 'result-wrap error';
+  document.getElementById('resultTitle').textContent = '❌ エラー';
+  document.getElementById('resultStats').textContent = msg;
+}
+
+function resetResult() {
+  document.getElementById('resultWrap').style.display = 'none';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressMsg').textContent = '準備中...';
+  ['step-extracting', 'step-transcribing', 'step-analyzing', 'step-generating'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.className = 'step';
+  });
+}
+
+function log(msg) {
+  const box = document.getElementById('logBox');
+  const now = new Date();
+  const ts = now.toTimeString().slice(0, 8);
+  box.value += '[' + ts + '] ' + msg + '\n';
+  box.scrollTop = box.scrollHeight;
+}
+
+function formatSec(sec) {
+  const s = Math.round(sec);
+  if (s < 60) return s + '秒';
+  return Math.floor(s / 60) + '分' + (s % 60) + '秒';
+}

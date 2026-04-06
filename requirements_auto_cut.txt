@@ -1,0 +1,12 @@
+# auto_cut.py の依存パッケージ
+# インストール: pip install -r requirements_auto_cut.txt
+
+# 音声処理（Apple Silicon最適化）
+mlx-whisper>=0.3.0
+pydub>=0.25.1
+
+# Claude API
+anthropic>=0.34.0
+
+# FFmpeg は別途インストールが必要
+# macOS: brew install ffmpeg

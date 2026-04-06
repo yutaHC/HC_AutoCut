@@ -451,7 +451,8 @@ export class PremiereProTools {
           presetPath: z.string().optional().describe('Optional path to an export preset file (.epr) for specific settings'),
           format: z.enum(['mp4', 'mov', 'avi', 'h264', 'prores']).optional().describe('The export format or codec'),
           quality: z.enum(['low', 'medium', 'high', 'maximum']).optional().describe('Export quality setting'),
-          resolution: z.string().optional().describe('Export resolution (e.g., "1920x1080", "3840x2160")')
+          resolution: z.string().optional().describe('Export resolution (e.g., "1920x1080", "3840x2160")'),
+          useInOut: z.boolean().optional().describe('If true, export only the In to Out range set in the sequence. Default is false (exports entire sequence).')
         })
       },
       {
@@ -868,6 +869,16 @@ export class PremiereProTools {
         })
       },
 
+      // Transcript
+      {
+        name: 'get_sequence_transcript',
+        description: 'Gets transcript/caption text with timestamps from the active sequence. Returns segments with start/end times parsed from caption tracks or SRT file. Use this as an alternative to faster-whisper for cut editing workflows.',
+        inputSchema: z.object({
+          sequenceId: z.string().optional().describe('The ID of the sequence (uses active sequence if omitted)'),
+          srtFilePath: z.string().optional().describe('Path to an SRT file to parse instead of reading from Premiere caption tracks')
+        })
+      },
+
       // Subclip
       {
         name: 'create_subclip',
@@ -1159,7 +1170,7 @@ export class PremiereProTools {
 
         // Export and Rendering
         case 'export_sequence':
-          return await this.exportSequence(args.sequenceId, args.outputPath, args.presetPath, args.format, args.quality, args.resolution);
+          return await this.exportSequence(args.sequenceId, args.outputPath, args.presetPath, args.format, args.quality, args.resolution, args.useInOut);
         case 'export_frame':
           return await this.exportFrame(args.sequenceId, args.time, args.outputPath, args.format);
 
@@ -1289,6 +1300,10 @@ export class PremiereProTools {
         // Captions
         case 'create_caption_track':
           return await this.createCaptionTrack(args.sequenceId, args.projectItemId, args.startTime, args.captionFormat);
+
+        // Transcript
+        case 'get_sequence_transcript':
+          return await this.getSequenceTranscript(args.sequenceId, args.srtFilePath);
 
         // Subclip
         case 'create_subclip':
@@ -2715,16 +2730,16 @@ export class PremiereProTools {
   }
 
   // Export and Rendering Implementation
-  private async exportSequence(sequenceId: string, outputPath: string, presetPath?: string, format?: string, quality?: string, resolution?: string): Promise<any> {
+  private async exportSequence(sequenceId: string, outputPath: string, presetPath?: string, format?: string, quality?: string, resolution?: string, useInOut?: boolean): Promise<any> {
     try {
       const defaultPreset = format === 'mp4' ? 'H.264' : 'ProRes';
       const preset = presetPath || defaultPreset;
-      
-      await this.bridge.renderSequence(sequenceId, outputPath, preset);
-      return { 
-        success: true, 
-        message: 'Sequence exported successfully',
-        outputPath: outputPath, 
+
+      await this.bridge.renderSequence(sequenceId, outputPath, preset, useInOut ?? false);
+      return {
+        success: true,
+        message: useInOut ? 'Sequence exported successfully (In to Out)' : 'Sequence exported successfully',
+        outputPath: outputPath,
         format: preset,
         quality: quality,
         resolution: resolution
@@ -4393,5 +4408,148 @@ export class PremiereProTools {
       }
     `;
     return await this.bridge.executeScript(script);
+  }
+
+  // Transcript Implementation
+  private async getSequenceTranscript(sequenceId?: string, srtFilePath?: string): Promise<any> {
+    // If srtFilePath is provided, parse it directly without calling Premiere
+    if (srtFilePath) {
+      return await this.parseSrtFile(srtFilePath);
+    }
+
+    // Otherwise, read caption tracks from the Premiere sequence
+    const script = `
+      try {
+        var sequence = ${sequenceId ? `__findSequence(${JSON.stringify(sequenceId)})` : 'app.project.activeSequence'};
+        if (!sequence) return JSON.stringify({ success: false, error: "Sequence not found" });
+
+        var segments = [];
+        var frameRate = sequence.timebase ? (1 / parseFloat(sequence.timebase)) : 29.97;
+
+        // Scan all tracks for caption/text items
+        // Caption tracks are video tracks with caption content
+        for (var t = 0; t < sequence.videoTracks.numTracks; t++) {
+          var track = sequence.videoTracks[t];
+          for (var c = 0; c < track.clips.numItems; c++) {
+            var clip = track.clips[c];
+            // Check if this clip has caption/text content
+            try {
+              var caption = clip.getCaption ? clip.getCaption() : null;
+              if (caption) {
+                var startSec = clip.start.seconds;
+                var endSec = clip.end.seconds;
+                segments.push({
+                  start: startSec,
+                  end: endSec,
+                  text: caption
+                });
+              }
+            } catch (captionErr) {
+              // Not a caption clip, skip
+            }
+          }
+        }
+
+        // Also try to access speech-to-text transcript via ProjectItem
+        // Premiere Pro 2022+ stores Transcribe results on the sequence's source clip
+        try {
+          var seqItem = null;
+          for (var i = 0; i < app.project.rootItem.children.numItems; i++) {
+            var item = app.project.rootItem.children[i];
+            if (item.name === sequence.name) {
+              seqItem = item;
+              break;
+            }
+          }
+          if (seqItem && seqItem.getMarkers) {
+            var markers = seqItem.getMarkers();
+            if (markers && markers.numMarkers > 0) {
+              for (var m = 0; m < markers.numMarkers; m++) {
+                var marker = markers[m];
+                if (marker.comments && marker.comments.length > 0) {
+                  segments.push({
+                    start: marker.start.seconds,
+                    end: marker.end.seconds,
+                    text: marker.comments,
+                    source: "marker"
+                  });
+                }
+              }
+            }
+          }
+        } catch (markerErr) {
+          // Marker access not available, skip
+        }
+
+        segments.sort(function(a, b) { return a.start - b.start; });
+
+        return JSON.stringify({
+          success: true,
+          sequenceName: sequence.name,
+          sequenceId: sequence.sequenceID,
+          duration: sequence.end ? sequence.end.seconds : null,
+          segmentCount: segments.length,
+          segments: segments
+        });
+      } catch (e) {
+        return JSON.stringify({ success: false, error: e.toString() });
+      }
+    `;
+    return await this.bridge.executeScript(script);
+  }
+
+  private async parseSrtFile(srtFilePath: string): Promise<any> {
+    const fs = await import('fs');
+    try {
+      const content = fs.readFileSync(srtFilePath, 'utf-8');
+      const segments: Array<{ index: number; start: number; end: number; text: string }> = [];
+
+      // SRT format:
+      // 1
+      // 00:00:01,500 --> 00:00:04,200
+      // text here
+      const blocks = content.trim().split(/\n\n+/);
+      for (const block of blocks) {
+        const lines = block.trim().split('\n');
+        if (lines.length < 3) continue;
+
+        const index = parseInt(lines[0]!.trim(), 10);
+        const timeLine = lines[1]!.trim();
+        const text = lines.slice(2).join(' ').trim();
+
+        const timeMatch = timeLine.match(
+          /(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/
+        );
+        if (!timeMatch) continue;
+
+        const toSeconds = (h: string, m: string, s: string, ms: string) =>
+          parseInt(h) * 3600 + parseInt(m) * 60 + parseInt(s) + parseInt(ms) / 1000;
+
+        const start = toSeconds(timeMatch[1]!, timeMatch[2]!, timeMatch[3]!, timeMatch[4]!);
+        const end = toSeconds(timeMatch[5]!, timeMatch[6]!, timeMatch[7]!, timeMatch[8]!);
+
+        segments.push({ index, start, end, text });
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            source: 'srt',
+            srtFilePath,
+            segmentCount: segments.length,
+            segments
+          }, null, 2)
+        }]
+      };
+    } catch (e: any) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ success: false, error: e.message })
+        }]
+      };
+    }
   }
 }

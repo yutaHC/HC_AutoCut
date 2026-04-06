@@ -1,3 +1,9 @@
+# Secrets
+.env
+*.env
+.env.local
+.env.*
+
 # Dependencies
 node_modules/
 
@@ -12,3 +18,21 @@ dist/
 
 # Worktrees
 .worktrees/
+
+# Video files
+*.mp4
+
+# Root-level SRT files (test/work files)
+/*.srt
+
+# MCP config (machine-specific absolute paths)
+.mcp.json
+
+# Development notes
+0405.md
+new_autoCut_program.md
+
+# autocut-plugin: output and machine-specific files
+autocut-plugin/output/
+autocut-plugin/data.csv
+autocut-plugin/venv/

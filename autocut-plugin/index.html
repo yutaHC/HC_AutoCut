@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>AutoCut</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, "Hiragino Sans", sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      font-size: 12px;
+      padding: 12px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 14px;
+      letter-spacing: 0.05em;
+    }
+
+    .section {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      color: #999;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    select, input[type="password"], input[type="text"] {
+      width: 100%;
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      padding: 6px 8px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    select:focus, input:focus {
+      border-color: #5a8dee;
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .mode-btn {
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      color: #aaa;
+      padding: 6px 4px;
+      cursor: pointer;
+      font-size: 11px;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .mode-btn.active {
+      background: #1e3a5f;
+      border-color: #5a8dee;
+      color: #fff;
+    }
+
+    .mode-btn:hover:not(.active) {
+      border-color: #555;
+      color: #ddd;
+    }
+
+    .mode-label { font-weight: 600; display: block; }
+    .mode-desc  { color: #666; font-size: 10px; margin-top: 2px; display: block; }
+    .mode-btn.active .mode-desc { color: #8ab4f8; }
+
+    #analyzeBtn {
+      width: 100%;
+      padding: 9px;
+      background: #2563eb;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.15s;
+    }
+
+    #analyzeBtn:hover:not(:disabled) { background: #1d4ed8; }
+
+    #analyzeBtn:disabled {
+      background: #2a2a2a;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    .progress-wrap {
+      display: none;
+      margin-top: 12px;
+    }
+
+    .progress-steps {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .step {
+      font-size: 10px;
+      color: #555;
+      text-align: center;
+      flex: 1;
+    }
+
+    .step.active { color: #5a8dee; }
+    .step.done   { color: #4ade80; }
+
+    .progress-bar-track {
+      height: 4px;
+      background: #2a2a2a;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #2563eb;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .progress-msg {
+      margin-top: 5px;
+      color: #888;
+      font-size: 11px;
+      min-height: 14px;
+    }
+
+    .log-wrap {
+      margin-top: 10px;
+    }
+
+    #logBox {
+      width: 100%;
+      height: 130px;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      color: #6b9;
+      font-family: "SF Mono", monospace;
+      font-size: 10px;
+      padding: 6px 8px;
+      overflow-y: auto;
+      resize: none;
+      outline: none;
+    }
+
+    .result-wrap {
+      display: none;
+      margin-top: 10px;
+      background: #0d2a1a;
+      border: 1px solid #166534;
+      border-radius: 4px;
+      padding: 8px 10px;
+    }
+
+    .result-wrap.error {
+      background: #2a0d0d;
+      border-color: #7f1d1d;
+    }
+
+    .result-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #4ade80;
+      margin-bottom: 4px;
+    }
+
+    .result-wrap.error .result-title { color: #f87171; }
+
+    .result-stats {
+      font-size: 11px;
+      color: #86efac;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #2a2a2a;
+      margin: 10px 0;
+    }
+
+    .api-key-toggle {
+      color: #555;
+      font-size: 10px;
+      cursor: pointer;
+      text-decoration: underline;
+      display: block;
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    .api-key-toggle:hover { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>✂️ AutoCut <span id="versionLabel" style="font-size:10px;font-weight:400;color:#555;margin-left:6px;"></span></h1>
+
+  <!-- LLM プロバイダ選択 -->
+  <div class="section">
+    <label>AI プロバイダ</label>
+    <div class="mode-grid" style="grid-template-columns: repeat(2, 1fr);">
+      <div class="mode-btn active" data-provider="claude" onclick="selectProvider(this)">
+        <span class="mode-label">Claude</span>
+        <span class="mode-desc">Anthropic</span>
+      </div>
+      <div class="mode-btn" data-provider="openai" onclick="selectProvider(this)">
+        <span class="mode-label">OpenAI</span>
+        <span class="mode-desc">GPT-4o mini</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- APIキー設定（Claude） -->
+  <div class="section" id="apiKeySection-claude">
+    <label>Anthropic API Key</label>
+    <input type="password" id="apiKeyInput-claude" placeholder="sk-ant-..." />
+    <span class="api-key-toggle" id="apiKeyToggle-claude" onclick="toggleApiKeySection('claude')" style="display:none;">設定済み（変更する）</span>
+  </div>
+
+  <!-- APIキー設定（OpenAI） -->
+  <div class="section" id="apiKeySection-openai" style="display:none;">
+    <label>OpenAI API Key</label>
+    <input type="password" id="apiKeyInput-openai" placeholder="sk-..." />
+    <span class="api-key-toggle" id="apiKeyToggle-openai" onclick="toggleApiKeySection('openai')" style="display:none;">設定済み（変更する）</span>
+  </div>
+
+  <hr class="divider">
+
+  <!-- モード選択 -->
+  <div class="section">
+    <label>カットモード</label>
+    <div class="mode-grid">
+      <div class="mode-btn" data-mode="jet" onclick="selectMode(this)">
+        <span class="mode-label">Jet</span>
+        <span class="mode-desc">0.3秒以上</span>
+      </div>
+      <div class="mode-btn active" data-mode="standard" onclick="selectMode(this)">
+        <span class="mode-label">Standard</span>
+        <span class="mode-desc">0.8秒以上</span>
+      </div>
+      <div class="mode-btn" data-mode="natural" onclick="selectMode(this)">
+        <span class="mode-label">Natural</span>
+        <span class="mode-desc">1.5秒以上</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 解析開始ボタン -->
+  <button id="analyzeBtn" onclick="startAnalysis()">解析開始</button>
+
+  <!-- プログレス -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-steps">
+      <div class="step" id="step-extracting">音声抽出</div>
+      <div class="step" id="step-transcribing">文字起こし</div>
+      <div class="step" id="step-analyzing">AI解析</div>
+      <div class="step" id="step-generating">XML生成</div>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+    <div class="progress-msg" id="progressMsg">準備中...</div>
+  </div>
+
+  <!-- ログ -->
+  <div class="log-wrap">
+    <label>ログ</label>
+    <textarea id="logBox" readonly></textarea>
+  </div>
+
+  <!-- 結果 -->
+  <div class="result-wrap" id="resultWrap">
+    <div class="result-title" id="resultTitle">✅ 完了</div>
+    <div class="result-stats" id="resultStats"></div>
+  </div>
+
+  <script src="CSInterface.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
