@@ -34,6 +34,7 @@ window.addEventListener('load', () => {
   document.getElementById('versionLabel').textContent = 'v' + VERSION;
   initApiKey();
   initGithubToken();
+  loadMyRulesToTextarea();
   log('AutoCut パネルが起動しました (v' + VERSION + ')');
   log('Python: ' + PYTHON_BIN);
 
@@ -131,25 +132,28 @@ function getGithubUsername() {
 
 // ---- チーム共有エージェント ----
 
-function openMyRulesFile() {
-  if (!fs.existsSync(MY_RULES_PATH)) {
-    const template = [
-      '# 自分の追加ルール',
-      '#',
-      '# ここに自由に追記してください。',
-      '# チームテンプレートに上乗せして使用されます。',
-      '# 「チームに共有」ボタンでチームへのPR提案ができます。',
-      '#',
-      '# 例:',
-      '# - 「くらぶらして」はカット対象ワードに追加する',
-      '# - NG後に「もう一回いきます」が来るパターンは前後まとめてカット',
-      '',
-    ].join('\n');
-    fs.writeFileSync(MY_RULES_PATH, template, 'utf8');
-    log('my_rules.md を作成しました');
-  }
-  spawn('/usr/bin/open', [MY_RULES_PATH]);
-  log('my_rules.md をテキストエディタで開きました');
+function loadMyRulesToTextarea() {
+  const textarea = document.getElementById('myRulesInput');
+  if (!textarea) return;
+  if (!fs.existsSync(MY_RULES_PATH)) return;
+
+  const raw = fs.readFileSync(MY_RULES_PATH, 'utf8');
+  // コメント行を除いた実質行だけをテキストエリアに表示
+  const meaningful = raw.split('\n')
+    .filter(l => l.trim() && !l.trim().startsWith('#'))
+    .join('\n');
+  if (meaningful) textarea.value = meaningful;
+}
+
+function saveTextareaToMyRules() {
+  const textarea = document.getElementById('myRulesInput');
+  const content = textarea ? textarea.value.trim() : '';
+  const fileContent = [
+    '# 自分の追加ルール（パネルから自動保存）',
+    '#',
+    content,
+  ].join('\n');
+  fs.writeFileSync(MY_RULES_PATH, fileContent, 'utf8');
 }
 
 function startPropose() {
@@ -173,10 +177,15 @@ function startPropose() {
     return;
   }
 
-  if (!fs.existsSync(MY_RULES_PATH)) {
-    alert('my_rules.md が見つかりません。「my_rules.md を編集」ボタンでファイルを作成してください。');
+  const rulesText = document.getElementById('myRulesInput')
+    ? document.getElementById('myRulesInput').value.trim() : '';
+  if (!rulesText) {
+    alert('追加ルールを入力してください');
     return;
   }
+
+  // テキストエリアの内容をmy_rules.mdに保存してからproposeを実行
+  saveTextareaToMyRules();
 
   isProposing = true;
   const btn = document.getElementById('proposeBtn');

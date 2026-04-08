@@ -232,20 +232,22 @@
       margin-top: 4px;
     }
 
-    #openRulesBtn {
+    #myRulesInput {
       width: 100%;
-      padding: 6px;
-      background: #2a2a3e;
+      height: 80px;
+      background: #111;
       border: 1px solid #3a3a5a;
       border-radius: 4px;
-      color: #aaa;
+      color: #c8c8f0;
+      font-family: "SF Mono", monospace;
       font-size: 11px;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: background 0.15s;
+      padding: 6px 8px;
+      resize: vertical;
+      outline: none;
+      margin-top: 6px;
     }
 
-    #openRulesBtn:hover { background: #333350; color: #ddd; }
+    #myRulesInput:focus { border-color: #6d5acd; }
 
     #proposeBtn {
       width: 100%;
@@ -376,8 +378,12 @@
       <input type="text" id="githubUsernameInput" placeholder="例: yuta-member" />
     </div>
 
-    <!-- my_rules.md を開く -->
-    <button id="openRulesBtn" onclick="openMyRulesFile()">my_rules.md を編集</button>
+    <!-- 追加ルール入力欄 -->
+    <div class="section" style="margin-top:8px;">
+      <label>もっとこうして欲しい（追加ルール）</label>
+      <textarea id="myRulesInput"
+        placeholder="- 「くらぶらして」はカット対象に追加&#10;- NG後の「もう一回いきます」は前後まとめてカット&#10;- 自由に書いてください"></textarea>
+    </div>
 
     <!-- チームに共有ボタン -->
     <button id="proposeBtn" onclick="startPropose()">チームに共有（自動PR）</button>
