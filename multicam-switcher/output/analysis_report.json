@@ -1,0 +1,145 @@
+{
+  "input_file": "D:\\学習データ\\output",
+  "input_summary": {
+    "total_projects": 1,
+    "has_overall_stats": true,
+    "has_per_project": true
+  },
+  "basic_stats": {
+    "total_segments": 2011,
+    "keep_count": 1445,
+    "cut_count": 566,
+    "keep_ratio": 0.719,
+    "cut_ratio": 0.281,
+    "keep_duration_stats": {
+      "mean": 2.652,
+      "median": 2.42,
+      "min": 0.3,
+      "max": 15.96
+    },
+    "cut_duration_stats": {
+      "mean": 2.507,
+      "median": 2.0,
+      "min": 0.34,
+      "max": 15.12
+    }
+  },
+  "match_score_distribution": {
+    "keep_score_mean": 0.8726,
+    "cut_score_mean": 0.4207,
+    "keep_distribution": {
+      "0.0-0.2": 0,
+      "0.2-0.4": 0,
+      "0.4-0.6": 78,
+      "0.6-0.8": 352,
+      "0.8-1.0": 1015
+    },
+    "cut_distribution": {
+      "0.0-0.2": 3,
+      "0.2-0.4": 198,
+      "0.4-0.6": 365,
+      "0.6-0.8": 0,
+      "0.8-1.0": 0
+    },
+    "suggested_threshold": {
+      "optimal_threshold": 0.55,
+      "f1_score": 1.0
+    }
+  },
+  "filler_patterns": {
+    "filler_segments": 178,
+    "filler_cut_rate": 0.354,
+    "non_filler_cut_rate": 0.274,
+    "filler_makes_cut_more_likely": true,
+    "filler_word_stats": {
+      "あー": {
+        "count": 1,
+        "cut_rate": 1.0
+      },
+      "えー": {
+        "count": 1,
+        "cut_rate": 1.0
+      },
+      "ちょっと": {
+        "count": 86,
+        "cut_rate": 0.407
+      },
+      "こう": {
+        "count": 32,
+        "cut_rate": 0.344
+      },
+      "なんか": {
+        "count": 40,
+        "cut_rate": 0.3
+      },
+      "あの": {
+        "count": 8,
+        "cut_rate": 0.25
+      },
+      "まあ": {
+        "count": 13,
+        "cut_rate": 0.231
+      }
+    }
+  },
+  "text_patterns": {
+    "retry_pattern": {
+      "count": 9,
+      "cut_rate": 0.333,
+      "examples": [
+        "足し算じゃなくて掛け算だったりするんですよね",
+        "それだけじゃなくて",
+        "いわゆる投資用ローンではなく",
+        "ごめんこれがぶっくんじゃったかも",
+        "あなたはどっち?みたいなのじゃなくて"
+      ]
+    },
+    "preamble_pattern": {
+      "count": 8,
+      "cut_rate": 0.0,
+      "examples": [
+        "それではこんな感じで次週もこのメンバーでお届けします",
+        "それではまた次週もご覧ください",
+        "それではまた",
+        "それでは次週もまたご覧ください",
+        "それでは次週もまたご覧ください"
+      ]
+    },
+    "text_length_vs_cut": {
+      "short_under_10chars": {
+        "count": 364,
+        "cut_rate": 0.379
+      },
+      "medium_10_30chars": {
+        "count": 1490,
+        "cut_rate": 0.261
+      },
+      "long_over_30chars": {
+        "count": 157,
+        "cut_rate": 0.248
+      }
+    }
+  },
+  "silence_patterns": {
+    "available": true,
+    "segments_with_silence_data": 1198,
+    "long_silence_before_1s": {
+      "count": 51,
+      "cut_rate": 0.275
+    },
+    "long_silence_after_1s": {
+      "count": 33,
+      "cut_rate": 0.242
+    }
+  },
+  "per_project": [
+    {
+      "project": "#1 CAM 1 01",
+      "total": 2011,
+      "keep": 1445,
+      "cut": 566,
+      "keep_ratio": 0.719,
+      "filler_ratio": 0.089
+    }
+  ]
+}

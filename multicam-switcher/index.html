@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>MultiCam Switcher</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, "Hiragino Sans", sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      font-size: 12px;
+      padding: 12px;
+      min-height: 100vh;
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 14px;
+      letter-spacing: 0.05em;
+    }
+
+    .section {
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    label {
+      display: block;
+      color: #999;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      padding: 5px 7px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    select:focus, input:focus {
+      border-color: #5a8dee;
+    }
+
+    select.cam-select {
+      width: 52px;
+    }
+
+    input[type="number"].offset-input {
+      width: 100%;
+    }
+
+    .camera-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .camera-row-label {
+      color: #777;
+      font-size: 11px;
+      min-width: 52px;
+      flex-shrink: 0;
+    }
+
+    .file-btn {
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      color: #ccc;
+      padding: 5px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .file-btn:hover {
+      border-color: #555;
+      color: #eee;
+    }
+
+    .file-path {
+      flex: 1;
+      min-width: 0;
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #888;
+      padding: 5px 7px;
+      font-size: 10px;
+      font-family: "SF Mono", monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cam-label {
+      color: #666;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .remove-btn {
+      background: none;
+      border: 1px solid #3a3a3a;
+      border-radius: 3px;
+      color: #666;
+      padding: 4px 6px;
+      font-size: 11px;
+      cursor: pointer;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .remove-btn:hover {
+      border-color: #7f1d1d;
+      color: #f87171;
+    }
+
+    .add-row-btn {
+      background: none;
+      border: 1px dashed #3a3a3a;
+      border-radius: 4px;
+      color: #666;
+      padding: 5px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 2px;
+    }
+
+    .add-row-btn:hover {
+      border-color: #555;
+      color: #999;
+    }
+
+    .cutaway-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cutaway-desc {
+      color: #666;
+      font-size: 11px;
+    }
+
+    .offset-desc {
+      color: #666;
+      font-size: 10px;
+      margin-top: 4px;
+    }
+
+    /* VAD折りたたみ */
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .collapsible-header:hover .section-title {
+      color: #ccc;
+    }
+
+    .collapse-arrow {
+      color: #555;
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+
+    .collapse-arrow.open {
+      transform: rotate(180deg);
+    }
+
+    .collapsible-body {
+      display: none;
+      margin-top: 8px;
+    }
+
+    .collapsible-body.open {
+      display: block;
+    }
+
+    .vad-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .vad-row label {
+      flex: 1;
+      margin-bottom: 0;
+      color: #888;
+    }
+
+    .vad-row input[type="number"] {
+      width: 80px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 9px;
+      background: #2563eb;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+
+    .btn-primary:disabled {
+      background: #2a2a2a;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    .btn-success {
+      width: 100%;
+      padding: 9px;
+      background: #16a34a;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: background 0.15s;
+    }
+
+    .btn-success:hover:not(:disabled) { background: #15803d; }
+
+    .btn-success:disabled {
+      background: #2a2a2a;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    /* プログレス */
+    .progress-wrap {
+      display: none;
+      margin-bottom: 10px;
+    }
+
+    .progress-steps {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .step {
+      font-size: 10px;
+      color: #555;
+      text-align: center;
+      flex: 1;
+    }
+
+    .step.active { color: #5a8dee; }
+    .step.done   { color: #4ade80; }
+
+    .progress-bar-track {
+      height: 4px;
+      background: #2a2a2a;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #2563eb;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .progress-msg {
+      margin-top: 5px;
+      color: #888;
+      font-size: 11px;
+      min-height: 14px;
+    }
+
+    /* ログ */
+    .log-wrap {
+      margin-bottom: 10px;
+    }
+
+    #logBox {
+      width: 100%;
+      height: 130px;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      color: #6b9;
+      font-family: "SF Mono", monospace;
+      font-size: 10px;
+      padding: 6px 8px;
+      overflow-y: auto;
+      resize: none;
+      outline: none;
+    }
+
+    /* 結果サマリー */
+    .result-wrap {
+      display: none;
+      background: #0d2a1a;
+      border: 1px solid #166534;
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+    }
+
+    .result-wrap.error {
+      background: #2a0d0d;
+      border-color: #7f1d1d;
+    }
+
+    .result-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #4ade80;
+      margin-bottom: 4px;
+    }
+
+    .result-wrap.error .result-title { color: #f87171; }
+
+    .result-stats {
+      font-size: 11px;
+      color: #86efac;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #2a2a2a;
+      margin: 10px 0;
+    }
+
+    .btn-sync {
+      width: 100%;
+      padding: 7px;
+      background: #4c1d95;
+      border: none;
+      border-radius: 4px;
+      color: #ddd6fe;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-sync:hover:not(:disabled) { background: #5b21b6; }
+
+    .btn-sync:disabled {
+      background: #2a2a2a;
+      color: #555;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 MultiCam Switcher</h1>
+
+  <!-- セクション1: カメラ / マイク設定 -->
+  <div class="section">
+    <div class="section-title">カメラ / マイク設定</div>
+    <div id="cameraRowsContainer"></div>
+    <button class="add-row-btn" onclick="addCameraRow()">＋ 行を追加</button>
+  </div>
+
+  <hr class="divider">
+
+  <!-- セクション2: 引き絵カメラ -->
+  <div class="section">
+    <div class="section-title">引き絵カメラ</div>
+    <div class="cutaway-row">
+      <span class="cutaway-desc">複数人発話 / 無音時</span>
+      <select id="cutawayCam" class="cam-select">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7" selected>7</option>
+      </select>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- セクション3: 音声同期 -->
+  <div class="section">
+    <div class="collapsible-header" onclick="toggleSync()">
+      <div class="section-title" style="border-bottom:none;margin-bottom:0;">音声同期</div>
+      <span class="collapse-arrow open" id="syncArrow">▼</span>
+    </div>
+    <div class="collapsible-body open" id="syncBody">
+      <!-- 自動同期 -->
+      <div style="background:#1f1f1f;border:1px solid #2a2a2a;border-radius:4px;padding:8px;margin-bottom:8px;">
+        <div style="color:#888;font-size:10px;margin-bottom:6px;">自動同期（FFT相互相関）</div>
+        <label>基準カメラ映像</label>
+        <div class="camera-row" style="margin-bottom:6px;">
+          <button class="file-btn" onclick="openSyncVideoDialog()">映像選択...</button>
+          <div class="file-path" id="syncVideoPath">（未選択）</div>
+        </div>
+        <label>基準マイクWAV</label>
+        <div class="camera-row" style="margin-bottom:6px;">
+          <button class="file-btn" onclick="openSyncWavDialog()">WAV選択...</button>
+          <div class="file-path" id="syncWavPath">（未選択）</div>
+        </div>
+        <button id="syncBtn" class="btn-sync" onclick="runSync()">自動同期を実行</button>
+        <div id="syncProgressWrap" style="display:none;margin-top:6px;">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="syncProgressBar" style="background:#7c3aed;"></div>
+          </div>
+          <div class="progress-msg" id="syncProgressMsg"></div>
+        </div>
+        <div id="syncResultWrap" style="display:none;margin-top:6px;display:none;align-items:center;gap:8px;">
+          <span style="color:#a78bfa;font-size:11px;">結果: <strong id="syncResultValue">—</strong> 秒</span>
+          <button class="file-btn" onclick="applySyncResult()" style="padding:3px 8px;font-size:11px;">オフセットに適用</button>
+        </div>
+      </div>
+      <!-- 手動オフセット -->
+      <label>オフセット（秒）</label>
+      <input type="number" id="offsetInput" class="offset-input" value="0.000" step="0.001" min="-86400" max="86400">
+      <div class="offset-desc">WAVファイルがタイムライン開始から何秒後から始まるか（自動同期結果を適用するか手動入力）</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- セクション4: VAD設定（折りたたみ） -->
+  <div class="section">
+    <div class="collapsible-header" onclick="toggleVad()">
+      <div class="section-title" style="border-bottom:none;margin-bottom:0;">VAD設定（詳細）</div>
+      <span class="collapse-arrow" id="vadArrow">▼</span>
+    </div>
+    <div class="collapsible-body" id="vadBody">
+      <div class="vad-row">
+        <label>無音閾値（dBFS）</label>
+        <input type="number" id="thresholdDb" value="-40.0" step="1" min="-120" max="0">
+      </div>
+      <div class="vad-row">
+        <label>最小発話長（秒）</label>
+        <input type="number" id="minSpeechSec" value="0.30" step="0.05" min="0.05" max="10">
+      </div>
+      <div class="vad-row">
+        <label>スムージング（秒）</label>
+        <input type="number" id="smoothingSec" value="0.30" step="0.05" min="0" max="5">
+      </div>
+      <div class="vad-row">
+        <label>最小カット間隔（秒）</label>
+        <input type="number" id="minIntervalSec" value="0.50" step="0.05" min="0" max="10">
+      </div>
+      <div class="vad-row">
+        <label>重複→引き絵 閾値（秒）</label>
+        <input type="number" id="overlapCutawaySec" value="1.5" step="0.1" min="0" max="10">
+      </div>
+      <div class="vad-row">
+        <label>無音→引き絵 閾値（秒）</label>
+        <input type="number" id="silenceCutawaySec" value="2.0" step="0.1" min="0" max="10">
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ボタン群 -->
+  <button id="analyzeBtn" class="btn-primary" onclick="startAnalysis()">解析開始</button>
+  <button id="applyBtn" class="btn-success" onclick="applyToPremiere()" disabled>Premiereに適用</button>
+
+  <!-- プログレス -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-steps">
+      <div class="step" id="step-loading">音声読込</div>
+      <div class="step" id="step-detecting">発話検出</div>
+      <div class="step" id="step-building">カットリスト生成</div>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+    <div class="progress-msg" id="progressMsg">準備中...</div>
+  </div>
+
+  <!-- ログ -->
+  <div class="log-wrap">
+    <label>ログ</label>
+    <textarea id="logBox" readonly></textarea>
+  </div>
+
+  <!-- 結果サマリー -->
+  <div class="result-wrap" id="resultWrap">
+    <div class="result-title" id="resultTitle">解析完了</div>
+    <div class="result-stats" id="resultStats"></div>
+  </div>
+
+  <!-- hidden file inputs (CEP環境で input[type=file] を使う) -->
+  <input type="file" id="fileInputHidden" accept=".wav,.mp3,.m4a,.aif,.aiff" style="display:none;">
+  <input type="file" id="syncVideoInputHidden" accept=".mp4,.mov,.mxf,.mkv,.avi" style="display:none;">
+  <input type="file" id="syncWavInputHidden" accept=".wav,.mp3,.m4a,.aif,.aiff" style="display:none;">
+
+  <script src="CSInterface.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

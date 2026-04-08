@@ -1,0 +1,193 @@
+{
+  "rules": [
+    {
+      "id": 1,
+      "name": "match_score_threshold",
+      "description": "完成品とのマッチスコアが 0.55 未満のセグメントはカット対象",
+      "condition": "match_score < 0.55",
+      "action": "cut",
+      "confidence": 1.0,
+      "priority": 1
+    }
+  ],
+  "few_shot_examples": [
+    {
+      "segment_text": "結局お金にするときにね",
+      "action": "keep",
+      "match_score": 0.55,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 1.0,
+      "context_before": "すごい増えたとか言ったって",
+      "context_after": "雑誌所得だから50%取られるわけですよ",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "そうなんですそうなんです",
+      "action": "keep",
+      "match_score": 0.6667,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 1.0,
+      "context_before": "いい感じに騙されたりして",
+      "context_after": "詐欺みたいなもので",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "でもこの信用力があってお金を借り入れできるっていうのって",
+      "action": "keep",
+      "match_score": 0.7556,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 3.0,
+      "context_before": "貯めれないし",
+      "context_after": "めちゃくちゃ強いと思ってて",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "楽な方を選ばずに苦しいと思う方を選び続けて成長していった方が",
+      "action": "keep",
+      "match_score": 0.8462,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 5.0,
+      "context_before": "その目標に対して逆算しながらコツコツと",
+      "context_after": "結果的には早く豊かになると思ってるんで",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "僕はヘアキャンプさんでマネーリテラシーの教科書っていうね",
+      "action": "keep",
+      "match_score": 0.931,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 4.0,
+      "context_before": "ちょっと自己紹介も兼ねてお願いしていいですか",
+      "context_after": "テーマでやらせられてるんで",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "ちょっとお金ってやらしい話",
+      "action": "keep",
+      "match_score": 1.0,
+      "has_filler": true,
+      "filler_words_found": [
+        "ちょっと"
+      ],
+      "duration": 2.0,
+      "context_before": "やっぱりある程度売り上げ上がってくると",
+      "context_after": "ちょっと余ってきたりもするじゃないですか",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "いや怒るんですよ",
+      "action": "keep",
+      "match_score": 1.0,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 1.0,
+      "context_before": "いやちょっと俺NISAで積み立ててるんでちょっとやめときますって言ったら怒るんですか",
+      "context_after": "それは怒らない",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "投資になるじゃないですか",
+      "action": "keep",
+      "match_score": 1.0,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 1.0,
+      "context_before": "結局どれを選んでもいいと思うんですよ",
+      "context_after": "それって投資にできるかどうかって",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "笑",
+      "action": "cut",
+      "match_score": 0.0,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 2.0,
+      "context_before": "俺も開封のギーとかやりたいもんだ",
+      "context_after": "でもね",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "1つが",
+      "action": "cut",
+      "match_score": 0.3333,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 1.0,
+      "context_before": "その投資って大きく僕5つあると思うんですよね",
+      "context_after": "ファイブスター",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "余ったことあったっけって今ずっと思って",
+      "action": "cut",
+      "match_score": 0.3684,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 3.0,
+      "context_before": "さっきちょっと余ってくるじゃないですかって話があって",
+      "context_after": "稼いではとて余らなかった",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "それ俺が言いたかったよな",
+      "action": "cut",
+      "match_score": 0.4,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 2.7,
+      "context_before": "で、100万ぐらい使う?",
+      "context_after": "そのいいですね、そのちょっかいで",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "見ていただいてここまで4週間連続で見てくれてるんですかね",
+      "action": "cut",
+      "match_score": 0.4231,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 3.0,
+      "context_before": "ありがとうございました",
+      "context_after": "そうですね僕が伝えたいのはそんな僕もまだ20代ですしね",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "どのぐらい好きなんですか",
+      "action": "cut",
+      "match_score": 0.4516,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 2.0,
+      "context_before": "全然無理やったっていう",
+      "context_after": "線微眼がやっぱり",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "我々の時代は何かそういうね",
+      "action": "cut",
+      "match_score": 0.48,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 2.0,
+      "context_before": "やっぱりこう衰退があるのかなっていう印象がありますね",
+      "context_after": "株やりましょうみたいな時代じゃなかったですもんね",
+      "project_name": "#1 CAM 1 01"
+    },
+    {
+      "segment_text": "全てを内包してという話ですね",
+      "action": "cut",
+      "match_score": 0.5,
+      "has_filler": false,
+      "filler_words_found": [],
+      "duration": 3.08,
+      "context_before": "これはだからあれですよね",
+      "context_after": "資産運用も経験も含めてという",
+      "project_name": "#1 CAM 1 01"
+    }
+  ]
+}

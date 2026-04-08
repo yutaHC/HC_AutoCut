@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-04-08T14:00:50.750798",
+  "projects": [
+    {
+      "name": "#1 CAM 1 01",
+      "source_kind": "files",
+      "input_folder": null,
+      "input_files": [
+        "D:\\学習データ\\data\\#1 CAM 1 01.mp4"
+      ],
+      "finished_file": "D:\\学習データ\\data\\#17_fix.mp4"
+    },
+    {
+      "name": "#1 CAM 1 01",
+      "source_kind": "files",
+      "input_folder": null,
+      "input_files": [
+        "D:\\学習データ\\data\\#2 CAM 1 01.mp4"
+      ],
+      "finished_file": "D:\\学習データ\\data\\#18_fix.mp4"
+    },
+    {
+      "name": "#1 CAM 1 01",
+      "source_kind": "files",
+      "input_folder": null,
+      "input_files": [
+        "D:\\学習データ\\data\\#3 CAM 1 01.mp4"
+      ],
+      "finished_file": "D:\\学習データ\\data\\#19_fix.mp4"
+    },
+    {
+      "name": "#1 CAM 1 01",
+      "source_kind": "files",
+      "input_folder": null,
+      "input_files": [
+        "D:\\学習データ\\data\\#4 CAM 1 01.mp4"
+      ],
+      "finished_file": "D:\\学習データ\\data\\#20_fix.mp4"
+    }
+  ],
+  "output_dir": "D:\\学習データ\\output\\20260408_140050\\output"
+}
