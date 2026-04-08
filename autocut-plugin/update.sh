@@ -17,9 +17,17 @@ if [ ! -d "$DEST" ]; then
   exit 1
 fi
 
-# pipeline.py を取得
+# pipeline.py / propose.py を取得
 curl -fsSL "${BASE_URL}/python/pipeline.py" -o "${DEST}/python/pipeline.py"
 echo "✓ pipeline.py"
+curl -fsSL "${BASE_URL}/python/propose.py" -o "${DEST}/python/propose.py"
+echo "✓ propose.py"
+
+# UIファイルを取得
+curl -fsSL "${BASE_URL}/index.html" -o "${DEST}/index.html"
+echo "✓ index.html"
+curl -fsSL "${BASE_URL}/main.js" -o "${DEST}/main.js"
+echo "✓ main.js"
 
 # versions.txt を取得
 curl -fsSL "${BASE_URL}/prompts/versions.txt" -o /tmp/autocut_versions.txt
