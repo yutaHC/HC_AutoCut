@@ -234,13 +234,24 @@ def parse_srt(srt_path: str) -> list:
 # ============================================================
 
 def _load_system_prompt() -> str:
-    """prompts/ 内の cut_logic_vX.Y.md から最新バージョンを自動検出して読み込む。"""
+    """prompts/ 内の最新 cut_logic_v*.md を読み込み、
+    my_rules.md が存在すれば末尾に追記して返す。"""
     prompts_dir = Path(__file__).parent.parent / "prompts"
     files = sorted(prompts_dir.glob("cut_logic_v*.md"))
     if not files:
         raise FileNotFoundError(f"プロンプトファイルが見つかりません: {prompts_dir}")
-    latest = files[-1]
-    return latest.read_text(encoding="utf-8").strip()
+    base_prompt = files[-1].read_text(encoding="utf-8").strip()
+
+    my_rules_path = prompts_dir / "my_rules.md"
+    if my_rules_path.exists():
+        raw = my_rules_path.read_text(encoding="utf-8")
+        meaningful = [l for l in raw.splitlines()
+                      if l.strip() and not l.strip().startswith('#')]
+        if meaningful:
+            rules_section = "\n\n## 追加ルール（個人設定）\n" + "\n".join(meaningful)
+            return base_prompt + rules_section
+
+    return base_prompt
 
 SYSTEM_PROMPT = _load_system_prompt()
 

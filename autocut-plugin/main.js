@@ -16,6 +16,8 @@ const fs = require('fs');
 const PLUGIN_DIR = csInterface.getSystemPath(SystemPath.EXTENSION);
 const PYTHON_BIN = path.join(PLUGIN_DIR, 'venv', 'bin', 'python3');
 const PIPELINE_SCRIPT = path.join(PLUGIN_DIR, 'python', 'pipeline.py');
+const PROPOSE_SCRIPT = path.join(PLUGIN_DIR, 'python', 'propose.py');
+const MY_RULES_PATH = path.join(PLUGIN_DIR, 'prompts', 'my_rules.md');
 const os = require('os');
 const OUTPUT_XML = path.join(os.homedir(), 'Desktop', 'autocut_result.xml');
 
@@ -24,12 +26,14 @@ const VERSION = '0.5.0';
 let selectedMode = 'standard';
 let selectedProvider = 'claude';
 let isRunning = false;
+let isProposing = false;
 
 // ---- 初期化 ----
 
 window.addEventListener('load', () => {
   document.getElementById('versionLabel').textContent = 'v' + VERSION;
   initApiKey();
+  initGithubToken();
   log('AutoCut パネルが起動しました (v' + VERSION + ')');
   log('Python: ' + PYTHON_BIN);
 
@@ -75,6 +79,180 @@ function getApiKey() {
     document.getElementById('apiKeyToggle-' + selectedProvider).textContent = '設定済み（変更する）';
   }
   return key || localStorage.getItem(storageKey) || '';
+}
+
+// ---- GitHubトークン管理 ----
+
+function initGithubToken() {
+  const savedToken    = localStorage.getItem('autocut_github_token') || '';
+  const savedUsername = localStorage.getItem('autocut_github_username') || '';
+  const tokenInput    = document.getElementById('githubTokenInput');
+  const tokenToggle   = document.getElementById('githubTokenToggle');
+  const usernameInput = document.getElementById('githubUsernameInput');
+
+  if (savedToken) {
+    tokenInput.value = savedToken;
+    document.getElementById('githubTokenSection').style.display = 'none';
+    tokenToggle.style.display = 'block';
+  }
+  if (savedUsername) {
+    usernameInput.value = savedUsername;
+  }
+}
+
+function toggleGithubTokenSection() {
+  const section = document.getElementById('githubTokenSection');
+  const toggle  = document.getElementById('githubTokenToggle');
+  const isHidden = section.style.display === 'none';
+  section.style.display = isHidden ? '' : 'none';
+  toggle.textContent = isHidden ? '閉じる' : '設定済み（変更する）';
+}
+
+function getGithubToken() {
+  const input = document.getElementById('githubTokenInput');
+  const key   = input.value.trim();
+  if (key) {
+    localStorage.setItem('autocut_github_token', key);
+    document.getElementById('githubTokenSection').style.display = 'none';
+    document.getElementById('githubTokenToggle').style.display = 'block';
+    document.getElementById('githubTokenToggle').textContent = '設定済み（変更する）';
+  }
+  return key || localStorage.getItem('autocut_github_token') || '';
+}
+
+function getGithubUsername() {
+  const input = document.getElementById('githubUsernameInput');
+  const name  = input.value.trim();
+  if (name) {
+    localStorage.setItem('autocut_github_username', name);
+  }
+  return name || localStorage.getItem('autocut_github_username') || 'anonymous';
+}
+
+// ---- チーム共有エージェント ----
+
+function openMyRulesFile() {
+  if (!fs.existsSync(MY_RULES_PATH)) {
+    const template = [
+      '# 自分の追加ルール',
+      '#',
+      '# ここに自由に追記してください。',
+      '# チームテンプレートに上乗せして使用されます。',
+      '# 「チームに共有」ボタンでチームへのPR提案ができます。',
+      '#',
+      '# 例:',
+      '# - 「くらぶらして」はカット対象ワードに追加する',
+      '# - NG後に「もう一回いきます」が来るパターンは前後まとめてカット',
+      '',
+    ].join('\n');
+    fs.writeFileSync(MY_RULES_PATH, template, 'utf8');
+    log('my_rules.md を作成しました');
+  }
+  spawn('/usr/bin/open', [MY_RULES_PATH]);
+  log('my_rules.md をテキストエディタで開きました');
+}
+
+function startPropose() {
+  if (isProposing || isRunning) return;
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    alert('Anthropic APIキーを入力してください');
+    return;
+  }
+
+  const githubToken = getGithubToken();
+  if (!githubToken) {
+    alert('GitHub Personal Access Token を入力してください（repo 権限が必要です）');
+    return;
+  }
+
+  const username = getGithubUsername();
+  if (!username || username === 'anonymous') {
+    alert('GitHubユーザー名を入力してください');
+    return;
+  }
+
+  if (!fs.existsSync(MY_RULES_PATH)) {
+    alert('my_rules.md が見つかりません。「my_rules.md を編集」ボタンでファイルを作成してください。');
+    return;
+  }
+
+  isProposing = true;
+  const btn = document.getElementById('proposeBtn');
+  btn.disabled = true;
+  btn.textContent = '提案中...';
+  document.getElementById('prLink').style.display = 'none';
+
+  log('--- チーム共有エージェント 開始 ---');
+
+  const args = [
+    PROPOSE_SCRIPT,
+    '--api-key',      apiKey,
+    '--github-token', githubToken,
+    '--username',     username,
+  ];
+
+  const pyProcess = spawn(PYTHON_BIN, args, {
+    env: Object.assign({}, process.env)
+  });
+
+  let buffer = '';
+
+  pyProcess.stdout.on('data', (data) => {
+    buffer += data.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+
+    lines.forEach(line => {
+      line = line.trim();
+      if (!line) return;
+      try {
+        const msg = JSON.parse(line);
+        handleProposeMessage(msg);
+      } catch (e) {
+        log('[propose] ' + line);
+      }
+    });
+  });
+
+  pyProcess.stderr.on('data', (data) => {
+    log('[propose/stderr] ' + data.toString().trim());
+  });
+
+  pyProcess.on('close', (code) => {
+    isProposing = false;
+    btn.disabled = false;
+    btn.textContent = 'チームに共有（自動PR）';
+    if (code !== 0) {
+      log('❌ propose.py がエラーで終了しました (code: ' + code + ')');
+    }
+  });
+
+  pyProcess.on('error', (err) => {
+    isProposing = false;
+    btn.disabled = false;
+    btn.textContent = 'チームに共有（自動PR）';
+    log('❌ 起動エラー: ' + err.message);
+  });
+}
+
+function handleProposeMessage(msg) {
+  if (msg.type === 'progress') {
+    log('[共有] ' + (msg.msg || msg.step));
+  } else if (msg.type === 'done') {
+    log('✅ チームテンプレートを更新しました（' + msg.new_version + '）');
+    log('PR: ' + msg.pr_url);
+    const prLink = document.getElementById('prLink');
+    prLink.style.display = 'block';
+    prLink.innerHTML = '✅ ' + msg.new_version + ' — <a href="#" onclick="openURL(\'' + msg.pr_url + '\');return false;">PR を確認</a>';
+  } else if (msg.type === 'error') {
+    log('❌ [共有エラー] ' + msg.message);
+  }
+}
+
+function openURL(url) {
+  csInterface.openURLInDefaultBrowser(url);
 }
 
 // ---- モード / プロバイダ選択 ----

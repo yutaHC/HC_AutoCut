@@ -7,7 +7,7 @@ set -euo pipefail
 
 REPO="yutaHC/HC_AutoCut"
 BRANCH="main"
-BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}"
+BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/autocut-plugin"
 DEST="$HOME/Library/Application Support/Adobe/CEP/extensions/haircamp-autocut"
 
 echo "=== AutoCut アップデート ==="
@@ -36,6 +36,26 @@ while IFS= read -r version; do
 done < /tmp/autocut_versions.txt
 
 LATEST=$(grep -v '^\s*$' /tmp/autocut_versions.txt | tail -1 | tr -d '[:space:]')
+
+# my_rules.md は個人ファイルのため上書きしない
+MY_RULES="${DEST}/prompts/my_rules.md"
+if [ ! -f "$MY_RULES" ]; then
+  cat > "$MY_RULES" << 'TEMPLATE'
+# 自分の追加ルール
+#
+# ここに自由に追記してください。
+# チームテンプレートに上乗せして使用されます。
+# 「チームに共有」ボタンでチームへのPR提案ができます。
+#
+# 例:
+# - 「くらぶらして」はカット対象ワードに追加する
+# - NG後に「もう一回いきます」が来るパターンは前後まとめてカット
+TEMPLATE
+  echo "✓ prompts/my_rules.md（初期テンプレート作成）"
+else
+  echo "✓ prompts/my_rules.md（個人ルールを保持）"
+fi
+
 echo ""
 echo "最新バージョン: ${LATEST}"
 echo "アップデート完了。"

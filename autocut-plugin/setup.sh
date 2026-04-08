@@ -68,7 +68,26 @@ echo "Python: $("$PYTHON_BIN" --version 2>&1)"
 "$VENV_DIR/bin/pip" install -r "$REQ_FILE"
 "$VENV_DIR/bin/pip" freeze > "$PLUGIN_DEST/pip-freeze.txt"
 
-echo "5. Enable CEP debug mode"
+echo "5. Initialize personal rules template"
+MY_RULES="${PLUGIN_DEST}/prompts/my_rules.md"
+if [ ! -s "$MY_RULES" ]; then
+  cat > "$MY_RULES" << 'TEMPLATE'
+# 自分の追加ルール
+#
+# ここに自由に追記してください。
+# チームテンプレートに上乗せして使用されます。
+# 「チームに共有」ボタンでチームへのPR提案ができます。
+#
+# 例:
+# - 「くらぶらして」はカット対象ワードに追加する
+# - NG後に「もう一回いきます」が来るパターンは前後まとめてカット
+TEMPLATE
+  echo "✓ prompts/my_rules.md を初期化しました"
+else
+  echo "✓ prompts/my_rules.md は既存のものを保持しました"
+fi
+
+echo "6. Enable CEP debug mode"
 defaults write com.adobe.CSXS.10 PlayerDebugMode 1 2>/dev/null || true
 defaults write com.adobe.CSXS.11 PlayerDebugMode 1 2>/dev/null || true
 

@@ -211,6 +211,67 @@
     }
 
     .api-key-toggle:hover { color: #888; }
+
+    /* チーム共有セクション */
+    .share-section {
+      margin-top: 10px;
+      padding: 10px;
+      background: #1a1a2e;
+      border: 1px solid #2d2d4a;
+      border-radius: 6px;
+    }
+
+    .share-section > label {
+      color: #8a8aee;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .share-section input[type="password"],
+    .share-section input[type="text"] {
+      margin-top: 4px;
+    }
+
+    #openRulesBtn {
+      width: 100%;
+      padding: 6px;
+      background: #2a2a3e;
+      border: 1px solid #3a3a5a;
+      border-radius: 4px;
+      color: #aaa;
+      font-size: 11px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s;
+    }
+
+    #openRulesBtn:hover { background: #333350; color: #ddd; }
+
+    #proposeBtn {
+      width: 100%;
+      padding: 8px;
+      background: #4c1d95;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background 0.15s;
+    }
+
+    #proposeBtn:hover:not(:disabled) { background: #5b21b6; }
+    #proposeBtn:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; }
+
+    #prLink {
+      margin-top: 6px;
+      font-size: 10px;
+      color: #a78bfa;
+      word-break: break-all;
+    }
+
+    #prLink a { color: #a78bfa; }
   </style>
 </head>
 <body>
@@ -293,6 +354,36 @@
   <div class="result-wrap" id="resultWrap">
     <div class="result-title" id="resultTitle">✅ 完了</div>
     <div class="result-stats" id="resultStats"></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- チーム共有エージェント -->
+  <div class="share-section">
+    <label>チーム共有エージェント</label>
+
+    <!-- GitHubトークン -->
+    <div class="section" id="githubTokenSection">
+      <label>GitHub Personal Access Token <span style="color:#555;font-size:10px;">（repo 権限が必要）</span></label>
+      <input type="password" id="githubTokenInput" placeholder="ghp_..." />
+      <span class="api-key-toggle" id="githubTokenToggle"
+            onclick="toggleGithubTokenSection()" style="display:none;">設定済み（変更する）</span>
+    </div>
+
+    <!-- GitHubユーザー名 -->
+    <div class="section">
+      <label>GitHubユーザー名</label>
+      <input type="text" id="githubUsernameInput" placeholder="例: yuta-member" />
+    </div>
+
+    <!-- my_rules.md を開く -->
+    <button id="openRulesBtn" onclick="openMyRulesFile()">my_rules.md を編集</button>
+
+    <!-- チームに共有ボタン -->
+    <button id="proposeBtn" onclick="startPropose()">チームに共有（自動PR）</button>
+
+    <!-- PR結果リンク -->
+    <div id="prLink" style="display:none;"></div>
   </div>
 
   <script src="CSInterface.js"></script>
