@@ -3030,17 +3030,66 @@ export class PremiereProTools {
   }
 
   // Track Management Implementation
-  private async addTrack(_sequenceId: string, trackType: string, _position?: string): Promise<any> {
-    const numVideo = trackType === 'video' ? 1 : 0;
-    const numAudio = trackType === 'audio' ? 1 : 0;
+  private async addTrack(sequenceId: string, trackType: string, _position?: string): Promise<any> {
     const script = `
       try {
+        var sequence = __findSequence(${JSON.stringify(sequenceId)});
+        if (!sequence) {
+          return JSON.stringify({
+            success: false,
+            error: "Sequence not found: " + ${JSON.stringify(sequenceId)}
+          });
+        }
+
+        app.project.openSequence(sequence.sequenceID);
         app.enableQE();
         var qeSeq = qe.project.getActiveSequence();
-        qeSeq.addTracks(${numVideo}, ${numAudio}, 0);
+        if (!qeSeq) {
+          return JSON.stringify({
+            success: false,
+            error: "QE active sequence not found"
+          });
+        }
+
+        var isVideo = ${JSON.stringify(trackType)} === "video";
+        var tracks = isVideo ? sequence.videoTracks : sequence.audioTracks;
+        var before = tracks.numTracks;
+
+        if (isVideo && qeSeq.addVideoTrack) {
+          qeSeq.addVideoTrack();
+        } else if (!isVideo && qeSeq.addAudioTrack) {
+          qeSeq.addAudioTrack();
+        } else if (qeSeq.addTracks) {
+          qeSeq.addTracks(isVideo ? 1 : 0, isVideo ? 0 : 1, 0);
+        } else {
+          return JSON.stringify({
+            success: false,
+            error: "QE sequence track add API is unavailable"
+          });
+        }
+
+        sequence = __findSequence(${JSON.stringify(sequenceId)});
+        if (!sequence) {
+          return JSON.stringify({
+            success: false,
+            error: "Sequence not found after adding track: " + ${JSON.stringify(sequenceId)}
+          });
+        }
+        tracks = isVideo ? sequence.videoTracks : sequence.audioTracks;
+        if (tracks.numTracks <= before) {
+          return JSON.stringify({
+            success: false,
+            error: "Track count did not increase",
+            before: before,
+            after: tracks.numTracks
+          });
+        }
+
         return JSON.stringify({
           success: true,
-          message: "${trackType} track added"
+          message: "${trackType} track added",
+          before: before,
+          after: tracks.numTracks
         });
       } catch (e) {
         return JSON.stringify({ success: false, error: e.toString() });

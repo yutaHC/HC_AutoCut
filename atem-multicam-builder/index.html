@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ATEM Multicam Builder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, "Hiragino Sans", sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      font-size: 12px;
+      padding: 14px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    .scan-area {
+      background: #242424;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .scan-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .scan-title {
+      font-size: 11px;
+      color: #aaa;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .badge {
+      background: #2a3a2a;
+      border: 1px solid #3d5c3d;
+      color: #6dbe6d;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .badge.none {
+      background: #2a2a2a;
+      border-color: #444;
+      color: #666;
+    }
+
+    #set-list {
+      list-style: none;
+      font-size: 11px;
+    }
+
+    #set-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid #2c2c2c;
+      color: #bbb;
+    }
+
+    #set-list li:last-child { border-bottom: none; }
+
+    .set-num {
+      background: #1f3040;
+      color: #5ab0e8;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .set-cams {
+      color: #777;
+      flex: 1;
+      font-family: "SF Mono", monospace;
+      font-size: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .set-status {
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .set-status.skip { color: #666; }
+    .set-status.new  { color: #5ab0e8; }
+
+    .placeholder {
+      color: #555;
+      font-size: 11px;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 9px 14px;
+      transition: opacity 0.15s;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #btn-scan {
+      background: #2a3a4a;
+      color: #8bc4e8;
+      flex: 1;
+    }
+
+    #btn-scan:hover:not(:disabled) { background: #334455; }
+
+    #btn-build {
+      background: #1a4a2a;
+      color: #6dcc6d;
+      flex: 2;
+    }
+
+    #btn-build:hover:not(:disabled) { background: #205730; }
+
+    .log-area {
+      background: #0e0e0e;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      padding: 10px;
+      height: 160px;
+      overflow-y: auto;
+      font-family: "SF Mono", "Menlo", monospace;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .log-line { color: #aaa; }
+    .log-line.ok  { color: #6dbe6d; }
+    .log-line.err { color: #e06060; }
+    .log-line.warn { color: #d4a44a; }
+    .log-line.skip { color: #666; }
+    .log-line.info { color: #5ab0e8; }
+
+    .progress-bar-wrap {
+      height: 3px;
+      background: #2a2a2a;
+      border-radius: 2px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    #progress-bar {
+      height: 100%;
+      background: #2563eb;
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <h1>ATEM Multicam Builder</h1>
+  <p class="subtitle">cam1〜4 を録画セットごとにシーケンス化</p>
+
+  <div class="scan-area">
+    <div class="scan-header">
+      <span class="scan-title">検出セット</span>
+      <span class="badge none" id="badge">--</span>
+    </div>
+    <ul id="set-list">
+      <li><span class="placeholder">スキャンしてください</span></li>
+    </ul>
+  </div>
+
+  <div class="btn-row">
+    <button id="btn-scan">スキャン</button>
+    <button id="btn-build" disabled>マルチカム作成</button>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div id="progress-bar"></div>
+  </div>
+
+  <div class="log-area" id="log"></div>
+
+  <script src="CSInterface.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
