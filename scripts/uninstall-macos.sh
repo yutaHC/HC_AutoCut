@@ -9,7 +9,7 @@ fi
 
 CEP_TARGET_DIR="$HOME/Library/Application Support/Adobe/CEP/extensions/MCPBridgeCEP"
 CLAUDE_CONFIG_PATH="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-TEMP_DIR="/tmp/premiere-mcp-bridge"
+TEMP_DIR="$HOME/Library/Application Support/premiere-mcp-bridge"
 
 echo "Removing Premiere CEP extension..."
 rm -rf "$CEP_TARGET_DIR"

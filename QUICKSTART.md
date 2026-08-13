@@ -15,7 +15,7 @@ Then do this once inside Premiere Pro:
 1. Open `Premiere Pro > Preferences > Plugins` and enable **UXP Plugins > Enable developer mode**.
 2. Restart Premiere Pro if the setting was changed.
 3. Open `Window > Extensions > MCP Bridge (CEP)`.
-4. Set `Temp Directory` to `/tmp/premiere-mcp-bridge`.
+4. Leave `Temp Directory` at its default (`~/Library/Application Support/premiere-mcp-bridge`), or set it explicitly if it's blank.
 5. Click `Save Configuration`.
 6. Click `Start Bridge`.
 7. Click `Test Connection`.
@@ -44,14 +44,14 @@ npm run build
 Add the MCP entry on one line:
 
 ```bash
-codex mcp add premiere_pro --env PREMIERE_TEMP_DIR=/tmp/premiere-mcp-bridge -- node /absolute/path/to/Adobe_Premiere_Pro_MCP/dist/index.js
+codex mcp add premiere_pro --env PREMIERE_TEMP_DIR="$HOME/Library/Application Support/premiere-mcp-bridge" -- node /absolute/path/to/Adobe_Premiere_Pro_MCP/dist/index.js
 ```
 
 Then:
 
 1. Restart the client.
 2. Open the Premiere CEP panel.
-3. Confirm the temp directory is `/tmp/premiere-mcp-bridge`.
+3. Confirm the temp directory matches `PREMIERE_TEMP_DIR` (default: `~/Library/Application Support/premiere-mcp-bridge`).
 4. Click `Start Bridge`.
 
 ## Sanity Checks
@@ -77,7 +77,7 @@ That sweep creates disposable `Sweep ...` sequences so the live bridge is actual
 - Premiere is not open
 - no project is open
 - the CEP panel is not started
-- the temp directory in the panel is not `/tmp/premiere-mcp-bridge`
+- the temp directory in the panel does not match `PREMIERE_TEMP_DIR` (default: `~/Library/Application Support/premiere-mcp-bridge`)
 - the panel needs a right-click `Reload` after bridge updates
 
 ### `codex mcp add` fails

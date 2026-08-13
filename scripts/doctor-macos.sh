@@ -12,7 +12,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DIST_ENTRY="$REPO_ROOT/dist/index.js"
 CEP_TARGET_DIR="$HOME/Library/Application Support/Adobe/CEP/extensions/MCPBridgeCEP"
 CLAUDE_CONFIG_PATH="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-TEMP_DIR="/tmp/premiere-mcp-bridge"
+TEMP_DIR="$HOME/Library/Application Support/premiere-mcp-bridge"
 FAILURES=0
 
 pass() {

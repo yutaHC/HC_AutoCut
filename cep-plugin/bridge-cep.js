@@ -10,8 +10,10 @@
     var os = require('os');
 
     function getDefaultTempPath() {
-        var base = (os.platform() === 'win32') ? (process.env.TEMP || 'C:\\Temp') : '/tmp';
-        return path.join(base, 'premiere-mcp-bridge');
+        if (os.platform() === 'win32') {
+            return path.join(process.env.TEMP || 'C:\\Temp', 'premiere-mcp-bridge');
+        }
+        return path.join(os.homedir(), 'Library', 'Application Support', 'premiere-mcp-bridge');
     }
 
     function MCPPremiereBridge() {
@@ -236,7 +238,12 @@
             var tempDir = tempEl ? tempEl.value.trim() : '';
             if (tempDir) this.tempDirectory = tempDir;
             var configPath = path.join(this.getTempDirectory(), 'config.json');
-            fs.writeFileSync(configPath, JSON.stringify({ tempDirectory: this.tempDirectory }, null, 2));
+            var config = {};
+            if (fs.existsSync(configPath)) {
+                try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch (e) {}
+            }
+            config.tempDirectory = this.tempDirectory;
+            fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
             this.log('Configuration saved', 'info');
         } catch (e) {
             this.log('Error saving config: ' + e.message, 'error');

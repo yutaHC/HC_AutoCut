@@ -665,7 +665,7 @@ export class PremiereProResources {
       '7. Keep transitions short unless the user asks otherwise. Cross dissolves usually work best when clips are adjacent and on the same track.',
       '8. Verify the active sequence before timeline operations. If needed, call set_active_sequence first.',
       '9. If a tool fails, report the real limitation instead of pretending success. Premiere scripting coverage is incomplete in some areas.',
-      '10. The CEP bridge panel must be open, pointed at /tmp/premiere-mcp-bridge, and started, or tool calls may time out.',
+      '10. The CEP bridge panel must be open, pointed at the same temp directory as PREMIERE_TEMP_DIR (default: ~/Library/Application Support/premiere-mcp-bridge), and started, or tool calls may time out.',
       '',
       'Suggested discovery flow:',
       '- Read premiere://config/get_instructions',

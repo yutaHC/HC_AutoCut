@@ -12,7 +12,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CEP_EXTENSIONS_DIR="$HOME/Library/Application Support/Adobe/CEP/extensions"
 CEP_TARGET_DIR="$CEP_EXTENSIONS_DIR/MCPBridgeCEP"
 CLAUDE_CONFIG_PATH="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-TEMP_DIR="/tmp/premiere-mcp-bridge"
+TEMP_DIR="$HOME/Library/Application Support/premiere-mcp-bridge"
 DIST_ENTRY="$REPO_ROOT/dist/index.js"
 
 if ! command -v node >/dev/null 2>&1; then
